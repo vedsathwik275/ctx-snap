@@ -110,6 +110,20 @@ Options:
   -V, --version                    Print version
 ```
 
+## Testing
+
+Run the test suite:
+
+```bash
+cargo test
+```
+
+Integration tests cover:
+- Basic snapshot generation
+- Large file filtering (--max-size-kb)
+- Custom ignore patterns (--ignore)
+- JSON output format (--json)
+
 ## License
 
 MIT
