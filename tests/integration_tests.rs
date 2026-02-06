@@ -75,3 +75,26 @@ fn test_custom_ignore_pattern() {
     assert!(content.contains("keep.rs"));
     assert!(!content.contains("ignore.log"));
 }
+
+#[test]
+fn test_json_output() {
+    let temp = TempDir::new().unwrap();
+    fs::write(temp.path().join("test.rs"), "fn main() {}\n").unwrap();
+
+    let output = temp.path().join("output.json");
+
+    Command::cargo_bin("ctx-snap")
+        .unwrap()
+        .arg(temp.path())
+        .arg("-o")
+        .arg(&output)
+        .arg("--json")
+        .assert()
+        .success();
+
+    let content = fs::read_to_string(&output).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+    assert!(json["files"].is_array());
+    assert_eq!(json["total_files"], 1);
+}
