@@ -1,0 +1,18 @@
+[package]
+name = "ctx-snap"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sathwik Toduru"]
+description = "Generate LLM-friendly context snapshots of your codebase"
+license = "MIT"
+keywords = ["cli", "llm", "context", "snapshot", "markdown"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+ignore = "0.4"
+walkdir = "2.4"
+anyhow = "1.0"
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
