@@ -52,3 +52,26 @@ fn test_respects_max_size() {
     let content = fs::read_to_string(&output).unwrap();
     assert!(!content.contains("large.txt"));
 }
+
+#[test]
+fn test_custom_ignore_pattern() {
+    let temp = TempDir::new().unwrap();
+    fs::write(temp.path().join("keep.rs"), "// keep").unwrap();
+    fs::write(temp.path().join("ignore.log"), "// ignore").unwrap();
+
+    let output = temp.path().join("output.md");
+
+    Command::cargo_bin("ctx-snap")
+        .unwrap()
+        .arg(temp.path())
+        .arg("-o")
+        .arg(&output)
+        .arg("--ignore")
+        .arg(".log")
+        .assert()
+        .success();
+
+    let content = fs::read_to_string(&output).unwrap();
+    assert!(content.contains("keep.rs"));
+    assert!(!content.contains("ignore.log"));
+}
