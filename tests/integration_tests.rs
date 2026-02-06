@@ -27,3 +27,28 @@ fn test_basic_snapshot() {
     assert!(content.contains("test.rs"));
     assert!(content.contains("fn main()"));
 }
+
+#[test]
+fn test_respects_max_size() {
+    let temp = TempDir::new().unwrap();
+    let large_file = temp.path().join("large.txt");
+
+    // Create 200KB file
+    let large_content = "x".repeat(200 * 1024);
+    fs::write(&large_file, large_content).unwrap();
+
+    let output = temp.path().join("output.md");
+
+    Command::cargo_bin("ctx-snap")
+        .unwrap()
+        .arg(temp.path())
+        .arg("-o")
+        .arg(&output)
+        .arg("--max-size-kb")
+        .arg("100")
+        .assert()
+        .success();
+
+    let content = fs::read_to_string(&output).unwrap();
+    assert!(!content.contains("large.txt"));
+}
