@@ -7,7 +7,7 @@ Generate LLM-friendly context snapshots of your codebase.
 Build from source:
 
 ```bash
-git clone https://github.com/yourusername/ctx-snap
+git clone https://github.com/vmadabushi6/ctx-snap
 cd ctx-snap
 cargo install --path .
 ```
