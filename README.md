@@ -35,8 +35,14 @@ ctx-snap -o mycontext.md
 # Skip large files
 ctx-snap --max-size-kb 50
 
-# Ignore specific patterns
-ctx-snap --ignore "*.log" --ignore "node_modules"
+# Ignore specific patterns (now supports glob patterns)
+ctx-snap --ignore "*.log" --ignore "**/node_modules/**"
+
+# Include only specific file types
+ctx-snap --include "**/*.rs" --include "**/*.toml"
+
+# Disable gitignore respect
+ctx-snap --no-gitignore
 
 # JSON output
 ctx-snap --json -o context.json
@@ -47,13 +53,30 @@ ctx-snap --quiet
 
 ## Features
 
-- ✅ Respects `.gitignore` automatically
+- ✅ Respects `.gitignore` automatically (with option to disable)
 - ✅ Filters binary files
 - ✅ Configurable file size limits
-- ✅ Custom ignore patterns
+- ✅ Custom ignore patterns with glob support (`*.log`, `**/node_modules/**`)
+- ✅ Include patterns for positive filtering
 - ✅ Token estimation
 - ✅ JSON or Markdown output
 - ✅ Syntax highlighting in output
+
+## Example Usage
+
+```bash
+# Use glob patterns for ignoring
+ctx-snap --ignore "*.log" --ignore "**/node_modules/**"
+
+# Include only specific file types
+ctx-snap --include "**/*.rs" --include "**/*.toml"
+
+# Disable gitignore respect
+ctx-snap --no-gitignore
+
+# Combine include and exclude patterns
+ctx-snap --include "**/*.rs" --ignore "target/**"
+```
 
 ## Example Output
 
@@ -103,7 +126,9 @@ Arguments:
 Options:
   -o, --output <OUTPUT>            Output file [default: context.md]
   -m, --max-size-kb <MAX_SIZE_KB>  Maximum file size in KB [default: 100]
-  -i, --ignore <IGNORE>            Skip files matching pattern (can be used multiple times)
+  -i, --ignore <IGNORE>            Skip files matching glob pattern (can be used multiple times)
+      --include <INCLUDE>          Only include files matching glob pattern (can be used multiple times)
+      --no-gitignore               Disable automatic .gitignore respect
   -q, --quiet                      Suppress progress output
   -j, --json                       Output as JSON
   -h, --help                       Print help

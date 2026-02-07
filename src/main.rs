@@ -22,9 +22,17 @@ struct Args {
     #[arg(short = 'm', long, default_value = "100")]
     max_size_kb: u64,
 
-    /// Skip files matching pattern (can be used multiple times)
+    /// Skip files matching glob pattern (can be used multiple times)
     #[arg(short, long)]
     ignore: Vec<String>,
+
+    /// Only include files matching glob pattern (can be used multiple times)
+    #[arg(long)]
+    include: Vec<String>,
+
+    /// Disable automatic .gitignore respect
+    #[arg(long)]
+    no_gitignore: bool,
 
     /// Suppress progress output
     #[arg(short, long)]
@@ -67,12 +75,21 @@ fn main() -> Result<()> {
 fn collect_files(args: &Args) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
 
-    let walker = WalkBuilder::new(&args.path)
-        .hidden(false)
-        .git_ignore(true)
-        .git_global(true)
-        .git_exclude(true)
-        .build();
+    let mut builder = WalkBuilder::new(&args.path);
+    builder.hidden(false);
+    
+    // Handle gitignore behavior
+    if args.no_gitignore {
+        builder.git_ignore(false)
+               .git_global(false)
+               .git_exclude(false);
+    } else {
+        builder.git_ignore(true)
+               .git_global(true)
+               .git_exclude(true);
+    }
+
+    let walker = builder.build();
 
     for entry in walker.filter_map(|e| e.ok()) {
         let path = entry.path();
@@ -87,8 +104,13 @@ fn collect_files(args: &Args) -> Result<Vec<PathBuf>> {
             continue;
         }
 
+        // Apply include patterns first (if any)
+        if !should_include(path, &args.include)? {
+            continue;
+        }
+
         // Apply custom ignore patterns
-        if should_ignore(path, &args.ignore) {
+        if should_ignore(path, &args.ignore)? {
             continue;
         }
 
@@ -126,15 +148,53 @@ fn is_likely_binary(path: &Path) -> Result<bool> {
     Ok(buffer[..bytes_read].contains(&0))
 }
 
-/// Check if a file should be ignored based on custom patterns
-fn should_ignore(path: &Path, patterns: &[String]) -> bool {
+/// Check if a file should be ignored based on glob patterns
+fn should_ignore(path: &Path, patterns: &[String]) -> Result<bool> {
     let path_str = path.to_string_lossy();
+    
+    for pattern in patterns {
+        let glob_pattern = glob::Pattern::new(pattern)?;
+        // Use MatchOptions to handle path separators correctly
+        let options = glob::MatchOptions {
+            case_sensitive: true,
+            require_literal_separator: false,
+            require_literal_leading_dot: false,
+        };
+        if glob_pattern.matches_with(&path_str, options) {
+            return Ok(true);
+        }
+    }
+    
+    Ok(false)
+}
 
-    patterns.iter().any(|pattern| {
-        // Simple substring matching
-        // Could be enhanced with glob patterns
-        path_str.contains(pattern.as_str())
-    })
+/// Check if a file should be included based on include patterns
+/// If no include patterns are specified, all files are included (returns true)
+/// If include patterns are specified, only files matching patterns are included
+fn should_include(path: &Path, patterns: &[String]) -> Result<bool> {
+    // If no include patterns specified, include all files
+    if patterns.is_empty() {
+        return Ok(true);
+    }
+    
+    let path_str = path.to_string_lossy();
+    
+    // Check if file matches any include pattern
+    for pattern in patterns {
+        let glob_pattern = glob::Pattern::new(pattern)?;
+        // Use MatchOptions to handle path separators correctly
+        let options = glob::MatchOptions {
+            case_sensitive: true,
+            require_literal_separator: false,
+            require_literal_leading_dot: false,
+        };
+        if glob_pattern.matches_with(&path_str, options) {
+            return Ok(true);
+        }
+    }
+    
+    // If we have include patterns but none matched, exclude the file
+    Ok(false)
 }
 
 /// Count lines in a file
